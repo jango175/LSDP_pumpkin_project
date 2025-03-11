@@ -85,8 +85,6 @@ def count_pumpkins(img: cv2.typing.MatLike) -> int:
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     # define the range for the color orange in HSV
-    # lower_orange = (0, 85, 234)
-    # upper_orange = (55, 228, 255)
     lower_orange = (12, 100, 180)
     upper_orange = (27, 230, 255)
 
@@ -126,10 +124,10 @@ def count_pumpkins(img: cv2.typing.MatLike) -> int:
         # check the contour dimension
         area.append(cv2.contourArea(contour))
 
-    single_pumpkin_area = np.median(area) # ~150
+    single_pumpkin_area = np.median(area) # ~140
 
-    # print(f'areas: {area}\n')
-    print(f'single pumpkin area: {single_pumpkin_area}\n')
+    # print(f'Areas: {area}\n')
+    print(f'Single pumpkin area: {single_pumpkin_area}\n')
 
     # Count pumpkins
     number_of_pumpkins = len(contours)
@@ -148,8 +146,8 @@ def count_pumpkins(img: cv2.typing.MatLike) -> int:
         i -= 1
 
         for j in range(i, 0, -1):
-            if a > 1.5*j*single_pumpkin_area:
-                number_of_pumpkins += j - 1
+            if a > 1.1*j*single_pumpkin_area:
+                number_of_pumpkins += j - 1 # -1 because the original pumpkin is already counted
                 break
 
     print(f'Corrected pumpkins: {number_of_pumpkins - prev_number_of_pumpkins}\n')
@@ -157,29 +155,32 @@ def count_pumpkins(img: cv2.typing.MatLike) -> int:
     return number_of_pumpkins
 
 
-def main() -> None:
+def main(file_path: str) -> None:
     """
     Main function.
+
+    :param file_path: Path to the orthomosaic image file.
     """
 
-    # path to orthomosaic file
-    # file_path = 'orthomosaic.tif'
-    file_path = 'orthomosaic_cropped.png'
-
     # read the file
-    if file_path.endswith(".tif"):
+    if file_path.endswith('.tif'):
         image, meta, profile = read_orthomosaic(file_path)
         img = convert_to_opencv(image)
     else:
         img = cv2.imread(file_path)
 
     # show the image
-    show_image("Orthomosaic", img)
+    # show_image('Orthomosaic', img)
 
     # count pumpkins
     count = count_pumpkins(img)
-    print(f"Number of pumpkins: {count}")
+    print(f'Number of pumpkins: {count}\n')
 
 
 if __name__ == "__main__":
-    main()
+    # path to orthomosaic file
+    file_path = 'orthomosaic.tif'
+    # file_path = 'orthomosaic_cropped.png'
+    # file_path = 'multi_pumpkin_test.JPG'
+
+    main(file_path)
