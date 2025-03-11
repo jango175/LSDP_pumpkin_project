@@ -1,10 +1,9 @@
-import cv2 as cv
-import os
-import matplotlib.pyplot as plt
+import rasterio
 import numpy as np
+import cv2
 
 
-def show_image(window_name: str, img: cv.typing.MatLike) -> None:
+def show_image(window_name: str, img: cv2.typing.MatLike) -> None:
     """
     Show the image in the full screen window.
 
@@ -12,40 +11,68 @@ def show_image(window_name: str, img: cv.typing.MatLike) -> None:
     :param img: The image to show.
     """
 
-    cv.namedWindow(window_name, cv.WINDOW_NORMAL)
-    cv.setWindowProperty(window_name, cv.WND_PROP_FULLSCREEN, cv.WINDOW_FULLSCREEN)
-    cv.imshow(window_name, img)
-    cv.waitKey(0)
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    cv2.imshow(window_name, img)
+    cv2.waitKey(0)
 
-    cv.destroyAllWindows()
+    cv2.destroyAllWindows()
 
 
-def image_histogram(img: cv.typing.MatLike) -> None:
+def read_orthomosaic(file_path: str) -> tuple[np.ndarray, dict, rasterio.profiles.Profile]:
     """
-    Draw the RGB histogram of the image.
+    Read an orthomosaic image using Rasterio.
 
-    :param img: The image.
+    :param file_path: Path to the orthomosaic image file.
+
+    :return: Tuple containing the image data, metadata and profile.
     """
 
-    # Split the image into its respective channels
-    channels = cv.split(img)
-    colors = ('b', 'g', 'r')
-    plt.figure()
-    plt.title('RGB Histogram')
-    plt.xlabel('Bins')
-    plt.ylabel('# of Pixels')
+    with rasterio.open(file_path) as src:
+        # read the image data
+        image = src.read()
+        # get metadata
+        meta = src.meta
 
-    # Calculate and plot the histogram for each channel
-    for (channel, color) in zip(channels, colors):
-        hist = cv.calcHist([channel], [0], None, [256], [0, 256])
-        plt.plot(hist, color=color)
-        plt.xlim([0, 256])
+        # print some basic info
+        print(f"Image shape: {image.shape}")
+        print(f"Coordinate system: {src.crs}")
 
-    plt.grid()
-    plt.show()
+        return image, meta, src.profile
 
 
-def count_pumpkins(img: cv.typing.MatLike) -> int:
+def convert_to_opencv(image: np.ndarray) -> np.ndarray:
+    """
+    Convert to format suitable for Opencv2.
+
+    :param image: Image data in rasterio format.
+
+    :return: Image data in OpenCV format.
+    """
+
+    # rasterio reads as (bands, height, width) but OpenCV expects (height, width, bands)
+    if image.shape[0] in [1, 3, 4]: # if band dimension is first
+        image = np.transpose(image, (1, 2, 0))
+
+    # if single band, expand to 3 channels for easier visualization
+    if len(image.shape) == 2 or image.shape[2] == 1:
+        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+
+    # handle 4-channel images (RGBA)
+    if image.shape[2] == 4:
+        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGBA2BGR)
+    else:
+        image = cv2.cvtColor(image.astype(np.uint8), cv2.COLOR_RGB2BGR)
+
+    # normalize to 0-255 if image is float
+    if image.dtype == np.float32 or image.dtype == np.float64:
+        image = (image - np.min(image)) / (np.max(image) - np.min(image)) * 255
+        image = image.astype(np.uint8)
+
+    return image
+
+
+def count_pumpkins(img: cv2.typing.MatLike) -> int:
     """
     Count pumpkins in the image.
 
@@ -54,56 +81,52 @@ def count_pumpkins(img: cv.typing.MatLike) -> int:
     :return: The number of pumpkins.
     """
 
-    # Convert the image to HSV color space
-    hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+    # convert the image to HSV color space
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # Define the range for the color orange in HSV
+    # define the range for the color orange in HSV
     # lower_orange = (0, 85, 234)
     # upper_orange = (55, 228, 255)
     lower_orange = (12, 100, 180)
     upper_orange = (27, 230, 255)
 
-    # Create a mask for the orange color
-    mask = cv.inRange(hsv, lower_orange, upper_orange)
+    # create a mask for the orange color
+    mask = cv2.inRange(hsv, lower_orange, upper_orange)
 
-    # Apply the mask to the image
-    masked = cv.bitwise_and(img, img, mask=mask)
+    # apply the mask to the image
+    masked = cv2.bitwise_and(img, img, mask=mask)
 
-    # Show the masked image
+    # show the masked image
     # show_image('Masked', masked)
 
-    # Convert the masked image to grayscale
-    gray_masked = cv.cvtColor(masked, cv.COLOR_BGR2GRAY)
+    # convert the masked image to grayscale
+    gray_masked = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY)
 
-    # Apply the Gaussian blur
-    blurred = cv.GaussianBlur(gray_masked, (9, 9), 0)
+    # apply the Gaussian blur
+    blurred = cv2.GaussianBlur(gray_masked, (11, 11), 0)
 
-    # Apply the threshold
-    _, thresh = cv.threshold(blurred, 10, 255, cv.THRESH_BINARY)
+    # apply the threshold
+    _, thresh = cv2.threshold(blurred, 10, 255, cv2.THRESH_BINARY)
 
-    # # # Apply the morphological operations
-    # thresh = cv.dilate(thresh, None, iterations=6)
-    # thresh = cv.erode(thresh, None, iterations=6)
-
-    # Show the masked image
+    # show the masked image
     # show_image('Thresh', thresh)
 
-    # Find contours
-    contours, _ = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    # find contours
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Draw contours
-    cv.drawContours(img, contours, -1, (255, 0, 0), 1)
+    # draw contours
+    cv2.drawContours(img, contours, -1, (255, 0, 0), 1)
 
-    # Show the image with contours
+    # show the image with contours
     show_image('Contours', img)
 
-    # Correct the number of the pumpkins which are close to each other
+    # correct the number of the pumpkins which are close to each other
     area = []
     for contour in contours:
         # check the contour dimension
-        area.append(cv.contourArea(contour))
+        area.append(cv2.contourArea(contour))
 
-    single_pumpkin_area = np.median(area) # 150
+    single_pumpkin_area = np.median(area) # ~150
 
     # print(f'areas: {area}\n')
     print(f'single pumpkin area: {single_pumpkin_area}\n')
@@ -136,30 +159,27 @@ def count_pumpkins(img: cv.typing.MatLike) -> int:
 
 def main() -> None:
     """
-    The main function.
+    Main function.
     """
 
-    # # List images
-    # img_dir = 'pumpkin_images'
-    # images_list = os.listdir(img_dir)
-    # print(f'Number of images in the {img_dir}: {len(images_list)}')
-    # img = cv.imread(os.path.join(img_dir, images_list[180]))
+    # path to orthomosaic file
+    # file_path = 'orthomosaic.tif'
+    file_path = 'orthomosaic_cropped.png'
 
-    # Load the image
-    # img = cv.imread('orthomosaic.png')
-    img = cv.imread('orthomosaic_cropped.png')
+    # read the file
+    if file_path.endswith(".tif"):
+        image, meta, profile = read_orthomosaic(file_path)
+        img = convert_to_opencv(image)
+    else:
+        img = cv2.imread(file_path)
 
-    # Show the image
-    # show_image('Pumpkin', img)
+    # show the image
+    show_image("Orthomosaic", img)
 
-    # Show the histogram
-    # image_histogram(img)
-
-    pumpkin_cnt = count_pumpkins(img)
-    print(f'Number of pumpkins: {pumpkin_cnt}')
+    # count pumpkins
+    count = count_pumpkins(img)
+    print(f"Number of pumpkins: {count}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-else:
-    print('Imported pumpkin_counter.py')
