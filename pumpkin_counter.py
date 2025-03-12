@@ -177,6 +177,7 @@ def main(file_path: str) -> None:
     print(f'Number of pumpkins: {count}\n')
 
 
+# Entry point
 if __name__ == "__main__":
     # path to orthomosaic file
     file_path = 'orthomosaic.tif'
