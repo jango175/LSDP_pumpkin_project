@@ -100,7 +100,10 @@ cv.createTrackbar(high_V_name, window_detection_name, high_V, max_value, on_high
 
 while True:
     # ret, frame = cap.read()
-    frame = cv.imread(os.path.join(img_dir, images_list[150]))
+
+    # file_path = os.path.join(img_dir, images_list[150])
+    file_path = 'orthomosaic_cropped.png'
+    frame = cv.imread(file_path)
 
     if frame is None:
         break

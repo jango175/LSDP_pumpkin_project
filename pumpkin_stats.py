@@ -2,7 +2,64 @@ import cv2
 from matplotlib import pyplot as plt
 
 
-def image_histogram(img: cv2.typing.MatLike) -> None:
+def image_cielab_histogram(img: cv2.typing.MatLike) -> None:
+    """
+    Draw the CIELAB histogram of the image.
+
+    :param img: The image.
+    """
+
+    # Convert the image to the CIELAB color space
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+
+    # Split the image into its respective channels
+    channels = cv2.split(lab)
+    colors = ('black', 'green', 'blue')
+    plt.figure()
+    plt.title('CIELAB Histogram')
+    plt.xlabel('Bins')
+    plt.ylabel('# of Pixels')
+
+    # Calculate and plot the histogram for each channel
+    for (channel, color) in zip(channels, colors):
+        hist = cv2.calcHist([channel], [0], None, [256], [0, 256])
+        plt.plot(hist, color=color)
+        plt.xlim([0, 256])
+    plt.legend(['L*', 'a*', 'b*'])
+    plt.grid()
+    plt.show()
+
+
+
+def image_hsv_histogram(img: cv2.typing.MatLike) -> None:
+    """
+    Draw the HSV histogram of the image.
+
+    :param img: The image.
+    """
+
+    # Convert the image to the HSV color space
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    # Split the image into its respective channels
+    channels = cv2.split(hsv)
+    colors = ('black', 'orange', 'yellow')
+    plt.figure()
+    plt.title('HSV Histogram')
+    plt.xlabel('Bins')
+    plt.ylabel('# of Pixels')
+
+    # Calculate and plot the histogram for each channel
+    for (channel, color) in zip(channels, colors):
+        hist = cv2.calcHist([channel], [0], None, [256], [0, 256])
+        plt.plot(hist, color=color)
+        plt.xlim([0, 256])
+    plt.legend(['Hue', 'Saturation', 'Value'])
+    plt.grid()
+    plt.show()
+
+
+def image_rgb_histogram(img: cv2.typing.MatLike) -> None:
     """
     Draw the RGB histogram of the image.
 
@@ -22,6 +79,7 @@ def image_histogram(img: cv2.typing.MatLike) -> None:
         hist = cv2.calcHist([channel], [0], None, [256], [0, 256])
         plt.plot(hist, color=color)
         plt.xlim([0, 256])
+    plt.legend(['Blue', 'Green', 'Red'])
     plt.grid()
     plt.show()
 
@@ -40,7 +98,7 @@ def image_stats(img: cv2.typing.MatLike) -> None:
     (b_mean, b_std) = (b.mean(), b.std())
 
     # Print the mean and standard deviation of the image
-    print('\nCIELAB Color Space:')
+    print('\nCIELAB Colour Space:')
     print(f'L*: mean={l_mean}, std={l_std}')
     print(f'a*: mean={a_mean}, std={a_std}')
     print(f'b*: mean={b_mean}, std={b_std}\n')
@@ -52,7 +110,7 @@ def image_stats(img: cv2.typing.MatLike) -> None:
     (v_mean, v_std) = (v.mean(), v.std())
 
     # Print the mean and standard deviation of the image
-    print('HSV Color Space:')
+    print('HSV Colour Space:')
     print(f'H: mean={h_mean}, std={h_std}')
     print(f'S: mean={s_mean}, std={s_std}')
     print(f'V: mean={v_mean}, std={v_std}\n')
@@ -64,7 +122,7 @@ def image_stats(img: cv2.typing.MatLike) -> None:
     (b_mean, b_std) = (b.mean(), b.std())
 
     # Print the mean and standard deviation of the image
-    print('RGB Color Space:')
+    print('RGB Colour Space:')
     print(f'R: mean={r_mean}, std={r_std}')
     print(f'G: mean={g_mean}, std={g_std}')
     print(f'B: mean={b_mean}, std={b_std}\n')
@@ -79,7 +137,9 @@ def main(file_path) -> None:
 
     img = cv2.imread(file_path)
 
-    image_histogram(img)
+    image_rgb_histogram(img)
+    image_hsv_histogram(img)
+    image_cielab_histogram(img)
 
     image_stats(img)
 

@@ -95,7 +95,7 @@ def count_pumpkins(img: cv2.typing.MatLike) -> int:
     masked = cv2.bitwise_and(img, img, mask=mask)
 
     # show the masked image
-    # show_image('Masked', masked)
+    show_image('Masked', masked)
 
     # convert the masked image to grayscale
     gray_masked = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY)
@@ -107,7 +107,7 @@ def count_pumpkins(img: cv2.typing.MatLike) -> int:
     _, thresh = cv2.threshold(blurred, 10, 255, cv2.THRESH_BINARY)
 
     # show the masked image
-    # show_image('Thresh', thresh)
+    show_image('Thresh', thresh)
 
     # find contours
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -170,7 +170,7 @@ def main(file_path: str) -> None:
         img = cv2.imread(file_path)
 
     # show the image
-    # show_image('Orthomosaic', img)
+    show_image('Orthomosaic', img)
 
     # count pumpkins
     count = count_pumpkins(img)
@@ -180,8 +180,8 @@ def main(file_path: str) -> None:
 # Entry point
 if __name__ == "__main__":
     # path to orthomosaic file
-    file_path = 'orthomosaic.tif'
-    # file_path = 'orthomosaic_cropped.png'
+    # file_path = 'orthomosaic.tif'
+    file_path = 'orthomosaic_cropped.png'
     # file_path = 'multi_pumpkin_test.JPG'
 
     main(file_path)
